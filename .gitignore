@@ -1,0 +1,5 @@
+bin/
+pkg/
+tmp/
+
+graylog_apollo_bundle-*
