@@ -3,6 +3,7 @@ package main
 import (
 	"archive/zip"
 	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -13,10 +14,13 @@ import (
 	"time"
 )
 
-// TODO: multiple server instances? auto-discovery? required with cluster stats read we already do?
-//       collect info about cpu usage, cores, io, ...? is there a lib for that? do we have it in rest?
+// TODO:
 //       can we get cluster_id?
 //       make sure that there never is alarmcallback or output config in streams
+//       read extractors
+//       if code 401, run with admin permissions
+//       sample threaddumps
+//       get shards and shit. are there unassigned or red ones/
 
 var username string
 var password string
@@ -26,6 +30,19 @@ var submitToken string
 type IncludedFile struct {
 	Name string
 	Body []byte
+}
+
+type ClusterNodeList struct {
+	Nodes []ClusterNodeDetails `json:"nodes"`
+}
+
+type ClusterNodeDetails struct {
+	NodeId           string `json:"node_id"`
+	Type             string `json:"type"`
+	TransportAddress string `json:"transport_address"`
+	LastSeen         string `json:"last_seen"`
+	ShortNodeId      string `json:"short_node_id"`
+	IsMaster         bool   `json:"is_master"`
 }
 
 func init() {
@@ -48,21 +65,40 @@ func main() {
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds | log.Lshortfile)
 	log.Println("Starting up.")
 
+	// Discovery. Read system detail information of all nodes.
+	nodesListResponse := readResourceJson("system/cluster/nodes", true)
+	var discoveredNodes ClusterNodeList
+	err := json.Unmarshal(nodesListResponse, &discoveredNodes)
+	check(err, true)
+
+	var discoveredClusterNodeDetails string
+	for i := 0; i < len(discoveredNodes.Nodes); i++ {
+		node := discoveredNodes.Nodes[i]
+		log.Printf("Discovered Graylog node: [%v] at [%v].\n", node.NodeId, node.TransportAddress)
+
+		// Try to read /system from discovered node. Do not exit it it fails.
+		discoveredClusterNodeDetails += string(readResourceJsonFromNode(node.TransportAddress, "system", false))
+		discoveredClusterNodeDetails += "\n\n"
+
+		// Build own JSON file with all /system informations. Backend can list all nodes and see which were discovered
+		// - required in case one node is not reachable (overloaded?) but we want as much information as possible.
+	}
+
 	// Zip up the files.
 	var files = []IncludedFile{
-		{"metrics.json", readResourceJson("system/metrics")},
-		{"system.json", readResourceJson("system")},
-		{"system_jvm.json", readResourceJson("system/jvm")},
-		{"system_stats.json", readResourceJson("system/stats")},
-		{"cluster_stats.json", readResourceJson("system/cluster/stats")},
-		{"cluster_nodes.json", readResourceJson("system/cluster/nodes")},
-		{"services.json", readResourceJson("system/serviceManager")},
-		{"journal.json", readResourceJson("system/journal")},
-		{"buffers.json", readResourceJson("system/buffers")},
-		{"notifications.json", readResourceJson("system/notifications")},
-		{"throughput.json", readResourceJson("system/throughput")},
-		{"streams.json", readResourceJson("streams")},
-		{"streams_throughput.json", readResourceJson("streams/throughput")},
+		{"metrics.json", readResourceJson("system/metrics", true)},
+		{"system_jvm.json", readResourceJson("system/jvm", true)},
+		{"system_stats.json", readResourceJson("system/stats", true)},
+		{"cluster_stats.json", readResourceJson("system/cluster/stats", true)},
+		{"cluster_nodes.json", nodesListResponse},
+		{"cluster_nodes_details.json", []byte(discoveredClusterNodeDetails)},
+		{"services.json", readResourceJson("system/serviceManager", true)},
+		{"journal.json", readResourceJson("system/journal", true)},
+		{"buffers.json", readResourceJson("system/buffers", true)},
+		{"notifications.json", readResourceJson("system/notifications", true)},
+		{"throughput.json", readResourceJson("system/throughput", true)},
+		{"streams.json", readResourceJson("streams", true)},
+		{"streams_throughput.json", readResourceJson("streams/throughput", true)},
 	}
 
 	filename := zipIt(files)
@@ -82,15 +118,15 @@ func flagsSet() bool {
 	return len(username) > 0 && len(password) > 0 && len(url) > 0
 }
 
-func getHTTPRequest(path string) (*http.Client, *http.Request) {
-	if !strings.HasSuffix(url, "/") {
-		url += "/"
+func getHTTPRequest(targetUrl string, path string, fail bool) (*http.Client, *http.Request) {
+	if !strings.HasSuffix(targetUrl, "/") {
+		targetUrl += "/"
 	}
 
-	req, err := http.NewRequest("GET", url+path, nil)
+	req, err := http.NewRequest("GET", targetUrl+path, nil)
 
 	if err != nil {
-		check(err)
+		check(err, fail)
 	}
 	req.SetBasicAuth(username, password)
 
@@ -99,30 +135,35 @@ func getHTTPRequest(path string) (*http.Client, *http.Request) {
 	return client, req
 }
 
-func readResourceJson(path string) []byte {
-	client, req := getHTTPRequest(path)
+func readResourceJsonFromNode(node string, path string, fail bool) []byte {
+	client, req := getHTTPRequest(node, path, fail)
 
 	resp, err := client.Do(req)
 
 	if err != nil {
-		check(err)
+		check(err, fail)
 	}
 
 	if resp.StatusCode != 200 {
-		log.Fatal("Expected HTTP 200 but got HTTP " + strconv.Itoa(resp.StatusCode) + ". Exiting.")
+		log.Println("Expected HTTP 200 but got HTTP " + strconv.Itoa(resp.StatusCode) + ".")
+
+		if fail {
+			log.Fatal("Exiting.")
+		}
 	}
 
 	result, err := ioutil.ReadAll(resp.Body)
-
-	if err != nil {
-		check(err)
-	}
+	check(err, fail)
 
 	resp.Body.Close()
 
-	log.Printf("Successfully read %v bytes [%v] from Graylog.", len(result), path)
+	log.Printf("Successfully read %v bytes [%v].", len(result), path)
 
 	return result
+}
+
+func readResourceJson(path string, fail bool) []byte {
+	return readResourceJsonFromNode(url, path, fail)
 }
 
 func zipIt(files []IncludedFile) string {
@@ -132,16 +173,16 @@ func zipIt(files []IncludedFile) string {
 	for _, file := range files {
 		zipFile, err := zipWriter.Create(file.Name)
 		if err != nil {
-			check(err)
+			check(err, true)
 		}
 		_, err = zipFile.Write([]byte(file.Body))
 		if err != nil {
-			check(err)
+			check(err, true)
 		}
 	}
 
 	err := zipWriter.Close()
-	check(err)
+	check(err, true)
 
 	// Write zipfile to disk.
 	t := time.Now()
@@ -152,8 +193,12 @@ func zipIt(files []IncludedFile) string {
 	return finalName
 }
 
-func check(e error) {
+func check(e error, fail bool) {
 	if e != nil {
-		log.Fatal(e)
+		if fail {
+			log.Fatal(e)
+		} else {
+			log.Println(e)
+		}
 	}
 }
