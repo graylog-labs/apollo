@@ -86,6 +86,7 @@ func main() {
 
 	// Zip up the files.
 	var files = []IncludedFile{
+		{"reporting_system.json", readResourceJson("system", true)},
 		{"metrics.json", readResourceJson("system/metrics", true)},
 		{"system_jvm.json", readResourceJson("system/jvm", true)},
 		{"system_stats.json", readResourceJson("system/stats", true)},
@@ -99,6 +100,8 @@ func main() {
 		{"throughput.json", readResourceJson("system/throughput", true)},
 		{"streams.json", readResourceJson("streams", true)},
 		{"streams_throughput.json", readResourceJson("streams/throughput", true)},
+		{"indexer_health.json", readResourceJson("system/indexer/cluster/health", true)},
+		{"indexer_failures.json", readResourceJson("system/indexer/failures?limit=100&offset=0", true)},
 	}
 
 	filename := zipIt(files)
