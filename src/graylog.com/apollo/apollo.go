@@ -15,12 +15,7 @@ import (
 )
 
 // TODO:
-//       can we get cluster_id?
-//       make sure that there never is alarmcallback or output config in streams
-//       read extractors
 //       if code 401, run with admin permissions
-//       sample threaddumps
-//       get shards and shit. are there unassigned or red ones/
 
 var username string
 var password string
@@ -48,8 +43,7 @@ type ClusterNodeDetails struct {
 func init() {
 	flag.StringVar(&username, "user", "", "Graylog username (must have administrator permissions)")
 	flag.StringVar(&password, "password", "", "Graylog password")
-	flag.StringVar(&url, "url", "", "URL of graylog-server REST URL. (Example: http://graylog.example.org:12900)")
-	flag.StringVar(&submitToken, "submit", "", "Provie an Apollo token to submit directly. (optional)")
+	flag.StringVar(&url, "url", "", "URL of a graylog-server REST URL. (Example: http://graylog.example.org:12900)")
 }
 
 func main() {
@@ -66,53 +60,43 @@ func main() {
 	log.Println("Starting up.")
 
 	// Discovery. Read system detail information of all nodes.
-	nodesListResponse := readResourceJson("system/cluster/nodes", true)
+	nodesListResponse := readResourceJson("system/cluster/nodes")
 	var discoveredNodes ClusterNodeList
 	err := json.Unmarshal(nodesListResponse, &discoveredNodes)
-	check(err, true)
+	check(err)
 
-	var discoveredClusterNodeDetails string
+	var files []IncludedFile
+
+	// Write bundle information file.
+	var t = time.Now()
+	files = append(files, IncludedFile{"timestamp", []byte(t.UTC().Format(time.RFC3339))})
+
+	// Data that is the same, no matter requested from which graylog-server node.
+	files = append(files, IncludedFile{"cluster_nodes.json", nodesListResponse})
+	files = append(files, IncludedFile{"cluster_stats.json", readResourceJson("system/cluster/stats")})
+	files = append(files, IncludedFile{"notifications.json", readResourceJson("system/notifications")})
+	files = append(files, IncludedFile{"streams.json", readResourceJson("streams")})
+	files = append(files, IncludedFile{"indexer_health.json", readResourceJson("system/indexer/cluster/health")})
+	files = append(files, IncludedFile{"indexer_failures.json", readResourceJson("system/indexer/failures?limit=100&offset=0")})
+
+	// Iterate over all discovered nodes.
 	for i := 0; i < len(discoveredNodes.Nodes); i++ {
 		node := discoveredNodes.Nodes[i]
 		log.Printf("Discovered Graylog node: [%v] at [%v].\n", node.NodeId, node.TransportAddress)
 
-		// Try to read /system from discovered node. Do not exit it it fails.
-		discoveredClusterNodeDetails += string(readResourceJsonFromNode(node.TransportAddress, "system", false))
-		discoveredClusterNodeDetails += "\n\n"
-
-		// Build own JSON file with all /system informations. Backend can list all nodes and see which were discovered
-		// - required in case one node is not reachable (overloaded?) but we want as much information as possible.
-	}
-
-	// Zip up the files.
-	var files = []IncludedFile{
-		{"reporting_system.json", readResourceJson("system", true)},
-		{"metrics.json", readResourceJson("system/metrics", true)},
-		{"system_jvm.json", readResourceJson("system/jvm", true)},
-		{"system_stats.json", readResourceJson("system/stats", true)},
-		{"cluster_stats.json", readResourceJson("system/cluster/stats", true)},
-		{"cluster_nodes.json", nodesListResponse},
-		{"cluster_nodes_details.json", []byte(discoveredClusterNodeDetails)},
-		{"services.json", readResourceJson("system/serviceManager", true)},
-		{"journal.json", readResourceJson("system/journal", true)},
-		{"buffers.json", readResourceJson("system/buffers", true)},
-		{"notifications.json", readResourceJson("system/notifications", true)},
-		{"throughput.json", readResourceJson("system/throughput", true)},
-		{"streams.json", readResourceJson("streams", true)},
-		{"streams_throughput.json", readResourceJson("streams/throughput", true)},
-		{"indexer_health.json", readResourceJson("system/indexer/cluster/health", true)},
-		{"indexer_failures.json", readResourceJson("system/indexer/failures?limit=100&offset=0", true)},
+		// Data specific to the requested graylog-server node.
+		files = append(files, IncludedFile{node.NodeId + "-system.json", readResourceJson("system")})
+		files = append(files, IncludedFile{node.NodeId + "-metrics.json", readResourceJson("system/metrics")})
+		files = append(files, IncludedFile{node.NodeId + "-system_jvm.json", readResourceJson("system/jvm")})
+		files = append(files, IncludedFile{node.NodeId + "-system_stats.json", readResourceJson("system/stats")})
+		files = append(files, IncludedFile{node.NodeId + "-services.json", readResourceJson("system/serviceManager")})
+		files = append(files, IncludedFile{node.NodeId + "-journal.json", readResourceJson("system/journal")})
+		files = append(files, IncludedFile{node.NodeId + "-buffers.json", readResourceJson("system/buffers")})
+		files = append(files, IncludedFile{node.NodeId + "-throughput.json", readResourceJson("system/throughput")})
 	}
 
 	filename := zipIt(files)
 	log.Printf("Wrote bundle to file: %v\n", filename)
-
-	// Submit to Apollo directly?
-	if len(submitToken) > 0 {
-		log.Printf("Submission to Apollo service was requested. Submitting with token [%v].\n", submitToken)
-
-		// TODO: actually build this.
-	}
 
 	log.Println("Finished.")
 }
@@ -121,7 +105,7 @@ func flagsSet() bool {
 	return len(username) > 0 && len(password) > 0 && len(url) > 0
 }
 
-func getHTTPRequest(targetUrl string, path string, fail bool) (*http.Client, *http.Request) {
+func getHTTPRequest(targetUrl string, path string) (*http.Client, *http.Request) {
 	if !strings.HasSuffix(targetUrl, "/") {
 		targetUrl += "/"
 	}
@@ -129,34 +113,33 @@ func getHTTPRequest(targetUrl string, path string, fail bool) (*http.Client, *ht
 	req, err := http.NewRequest("GET", targetUrl+path, nil)
 
 	if err != nil {
-		check(err, fail)
+		check(err)
 	}
 	req.SetBasicAuth(username, password)
 
-	client := &http.Client{}
+	client := &http.Client{
+		Timeout: time.Duration(30 * time.Second),
+	}
 
 	return client, req
 }
 
-func readResourceJsonFromNode(node string, path string, fail bool) []byte {
-	client, req := getHTTPRequest(node, path, fail)
+func readResourceJsonFromNode(node string, path string) []byte {
+	client, req := getHTTPRequest(node, path)
 
 	resp, err := client.Do(req)
 
 	if err != nil {
-		check(err, fail)
+		check(err)
 	}
 
 	if resp.StatusCode != 200 {
 		log.Println("Expected HTTP 200 but got HTTP " + strconv.Itoa(resp.StatusCode) + ".")
-
-		if fail {
-			log.Fatal("Exiting.")
-		}
+		log.Fatal("Exiting.")
 	}
 
 	result, err := ioutil.ReadAll(resp.Body)
-	check(err, fail)
+	check(err)
 
 	resp.Body.Close()
 
@@ -165,8 +148,8 @@ func readResourceJsonFromNode(node string, path string, fail bool) []byte {
 	return result
 }
 
-func readResourceJson(path string, fail bool) []byte {
-	return readResourceJsonFromNode(url, path, fail)
+func readResourceJson(path string) []byte {
+	return readResourceJsonFromNode(url, path)
 }
 
 func zipIt(files []IncludedFile) string {
@@ -176,16 +159,16 @@ func zipIt(files []IncludedFile) string {
 	for _, file := range files {
 		zipFile, err := zipWriter.Create(file.Name)
 		if err != nil {
-			check(err, true)
+			check(err)
 		}
 		_, err = zipFile.Write([]byte(file.Body))
 		if err != nil {
-			check(err, true)
+			check(err)
 		}
 	}
 
 	err := zipWriter.Close()
-	check(err, true)
+	check(err)
 
 	// Write zipfile to disk.
 	t := time.Now()
@@ -196,12 +179,8 @@ func zipIt(files []IncludedFile) string {
 	return finalName
 }
 
-func check(e error, fail bool) {
+func check(e error) {
 	if e != nil {
-		if fail {
-			log.Fatal(e)
-		} else {
-			log.Println(e)
-		}
+		log.Fatal(e)
 	}
 }
