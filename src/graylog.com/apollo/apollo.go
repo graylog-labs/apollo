@@ -67,9 +67,10 @@ func main() {
 
 	var files []IncludedFile
 
-	// Write bundle information file.
+	// Write bundle meta information files.
 	var t = time.Now()
 	files = append(files, IncludedFile{"timestamp", []byte(t.UTC().Format(time.RFC3339))})
+	files = append(files, IncludedFile{"reporting_system.json", readResourceJson("system")})
 
 	// Data that is the same, no matter requested from which graylog-server node.
 	files = append(files, IncludedFile{"cluster_nodes.json", nodesListResponse})
@@ -84,15 +85,15 @@ func main() {
 		node := discoveredNodes.Nodes[i]
 		log.Printf("Discovered Graylog node: [%v] at [%v].\n", node.NodeId, node.TransportAddress)
 
-		// Data specific to the requested graylog-server node.
-		files = append(files, IncludedFile{node.NodeId + "-system.json", readResourceJson("system")})
-		files = append(files, IncludedFile{node.NodeId + "-metrics.json", readResourceJson("system/metrics")})
-		files = append(files, IncludedFile{node.NodeId + "-system_jvm.json", readResourceJson("system/jvm")})
-		files = append(files, IncludedFile{node.NodeId + "-system_stats.json", readResourceJson("system/stats")})
-		files = append(files, IncludedFile{node.NodeId + "-services.json", readResourceJson("system/serviceManager")})
-		files = append(files, IncludedFile{node.NodeId + "-journal.json", readResourceJson("system/journal")})
-		files = append(files, IncludedFile{node.NodeId + "-buffers.json", readResourceJson("system/buffers")})
-		files = append(files, IncludedFile{node.NodeId + "-throughput.json", readResourceJson("system/throughput")})
+		// Data specific to the requested graylog-server node. TODO: use method to unify calls
+		files = append(files, IncludedFile{node.NodeId + "-system.json", readResourceJsonFromNode(node.TransportAddress, "system")})
+		files = append(files, IncludedFile{node.NodeId + "-metrics.json", readResourceJsonFromNode(node.TransportAddress, "system/metrics")})
+		files = append(files, IncludedFile{node.NodeId + "-system_jvm.json", readResourceJsonFromNode(node.TransportAddress, "system/jvm")})
+		files = append(files, IncludedFile{node.NodeId + "-system_stats.json", readResourceJsonFromNode(node.TransportAddress, "system/stats")})
+		files = append(files, IncludedFile{node.NodeId + "-services.json", readResourceJsonFromNode(node.TransportAddress, "system/serviceManager")})
+		files = append(files, IncludedFile{node.NodeId + "-journal.json", readResourceJsonFromNode(node.TransportAddress, "system/journal")})
+		files = append(files, IncludedFile{node.NodeId + "-buffers.json", readResourceJsonFromNode(node.TransportAddress, "system/buffers")})
+		files = append(files, IncludedFile{node.NodeId + "-throughput.json", readResourceJsonFromNode(node.TransportAddress, "system/throughput")})
 	}
 
 	filename := zipIt(files)
