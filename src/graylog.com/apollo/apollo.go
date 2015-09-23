@@ -14,9 +14,6 @@ import (
 	"time"
 )
 
-// TODO:
-//       if code 401, run with admin permissions
-
 var username string
 var password string
 var url string
@@ -136,7 +133,7 @@ func readResourceJsonFromNode(node string, path string) []byte {
 
 	if resp.StatusCode != 200 {
 		log.Println("Expected HTTP 200 but got HTTP " + strconv.Itoa(resp.StatusCode) + ".")
-		log.Fatal("Exiting.")
+		log.Fatal("Exiting with failure. POSSIBLE CAUSE: Make sure that you are running this with a Graylog user that has admin permissions.")
 	}
 
 	result, err := ioutil.ReadAll(resp.Body)
