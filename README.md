@@ -38,3 +38,6 @@ Make sure to use a user with administrator permissions in the `-user` and `-pass
 
 ### What data is included in the bundle?
 The information collected is usually not containing any sensitive information and never any messages stored in Graylog. We will however be able to see stream and extractor names. Handling of the bundles falls under the support contract conditions and will thus never be shared and stored securely. You can look at the source code or unzip the generated bundle if you want to make sure.
+
+### Who will be able to see the bundles?
+Only Graylog employees will be able to see data from the bundles.
