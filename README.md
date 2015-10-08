@@ -10,14 +10,14 @@ The Apollo collector allows our support customers to easily submit bundles of in
 
 ### Using Apollo on Linux
 
-* Download the binary: `curl -OL https://github.com/Graylog2/apollo/releases/download/0.1/apollo_linux_386`
+* Download the binary: `curl -OL https://github.com/Graylog2/apollo/releases/download/0.2/apollo_linux_386`
 * Make the binary executable: `chmod +x apollo_linux_386`
 * Run the binary (replace username, password and hostname of `graylog-server` instance): `./apollo_linux_386 -user hans -password secret -url http://graylog.example.org:12900`
 * Send us the generated `.ZIP` bundle file via email. (Located in same folder from where you executed Apollo. Called something like `graylog_apollo_bundle-2015-09-23T22-05-54.zip`)
 
 ### Using Apollo on OSX
 
-* Download the binary: `curl -OL https://github.com/Graylog2/apollo/releases/download/0.1/apollo_osx_386`
+* Download the binary: `curl -OL https://github.com/Graylog2/apollo/releases/download/0.2/apollo_osx_386`
 * Make the binary executable: `chmod +x apollo_osx_386`
 * Run the binary (replace username, password and hostname of `graylog-server` instance): `./apollo_osx_386 -user hans -password secret -url http://graylog.example.org:12900`
 * Send us the generated `.ZIP` bundle file via email. (Located in same folder from where you executed Apollo. Called something like `graylog_apollo_bundle-2015-09-23T22-05-54.zip`)
