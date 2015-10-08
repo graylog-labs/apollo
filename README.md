@@ -4,7 +4,7 @@ The Apollo collector allows our support customers to easily submit bundles of in
 
 * The machine you run Apollo from must be able to reach the REST APIs of all `graylog-server` instances in your Graylog cluster. If you are unsure we recommend not to run it from your workstation but from the machine your `graylog-server` master is running on.
 * You must run Apollo with a Graylog admin user. This can either be the built-in administrator user or a custom user with the `administrator` ruleset applied. The bundle extraction will fail if you run it with a `reader` user.
-* The information collected is usually not containing any sensitive information and never any messages stored in Graylog. We will however be able to see stream and extractor names. Handling of the bundles falls under the support contract conditions and will thus never be shared and stored securely. You can look at the source code or unzip the generated bundle if you want to make sure.
+* The information collected is usually not containing any sensitive information and never any messages you sent into Graylog. We will however be able to see stream and extractor names. Handling of the bundles falls under the support contract conditions and will thus never be shared and stored securely. You can look at the source code or unzip the generated bundle if you want to make sure.
 * You only need to provide the REST API URL of one `graylog-server` instance. Apollo will auto-discover the other `graylog-server` instances in the cluster.
 * Future version will allow an automatic transmission of the bundle to us.
 
