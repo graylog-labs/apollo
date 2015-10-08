@@ -91,6 +91,7 @@ func main() {
 		files = append(files, IncludedFile{node.NodeId + "-journal.json", readResourceJsonFromNode(node.TransportAddress, "system/journal")})
 		files = append(files, IncludedFile{node.NodeId + "-buffers.json", readResourceJsonFromNode(node.TransportAddress, "system/buffers")})
 		files = append(files, IncludedFile{node.NodeId + "-throughput.json", readResourceJsonFromNode(node.TransportAddress, "system/throughput")})
+		files = append(files, IncludedFile{node.NodeId + "-system_messages.json", readResourceJsonFromNode(node.TransportAddress, "system/messages")})
 	}
 
 	filename := zipIt(files)
@@ -133,7 +134,12 @@ func readResourceJsonFromNode(node string, path string) []byte {
 
 	if resp.StatusCode != 200 {
 		log.Println("Expected HTTP 200 but got HTTP " + strconv.Itoa(resp.StatusCode) + ".")
-		log.Fatal("Exiting with failure. POSSIBLE CAUSE: Make sure that you are running this with a Graylog user that has admin permissions.")
+
+		if resp.StatusCode == 401 {
+			log.Fatal("POSSIBLE CAUSE: Make sure that you are running this with a Graylog user that has admin permissions.")
+		}
+
+		log.Fatal("Exiting with failure.")
 	}
 
 	result, err := ioutil.ReadAll(resp.Body)
