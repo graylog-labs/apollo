@@ -37,6 +37,18 @@ type ClusterNodeDetails struct {
 	IsMaster         bool   `json:"is_master"`
 }
 
+type IndexRangesList struct {
+	Ranges []IndexRangeDetails `json:"ranges"`
+}
+
+type IndexRangeDetails struct {
+	IndexName    string `json:"index_name"`
+	Begin        string `json:"begin"`
+	End          string `json:"end"`
+	CalculatedAt string `json:"calculated_at"`
+	TookMs       int    `json:"took_ms"`
+}
+
 func init() {
 	flag.StringVar(&username, "user", "", "Graylog username (must have administrator permissions)")
 	flag.StringVar(&password, "password", "", "Graylog password")
@@ -94,6 +106,18 @@ func main() {
 		files = append(files, IncludedFile{node.NodeId + "-system_messages.json", readResourceJsonFromNode(node.TransportAddress, "system/messages")})
 	}
 
+	// Get all index ranges.
+	indexRangesResponse := readResourceJson("system/indices/ranges")
+	var indexRanges IndexRangesList
+	err = json.Unmarshal(indexRangesResponse, &indexRanges)
+	check(err)
+
+	// Read and store shard routing for each index range.
+	for i := 0; i < len(indexRanges.Ranges); i++ {
+		indexRange := indexRanges.Ranges[i]
+		files = append(files, IncludedFile{"indexrouting-" + indexRange.IndexName + ".json", readResourceJson("system/indexer/indices/" + indexRange.IndexName)})
+	}
+
 	filename := zipIt(files)
 	log.Printf("Wrote bundle to file: %v\n", filename)
 
@@ -133,7 +157,7 @@ func readResourceJsonFromNode(node string, path string) []byte {
 	}
 
 	if resp.StatusCode != 200 {
-		log.Println("Expected HTTP 200 but got HTTP " + strconv.Itoa(resp.StatusCode) + ".")
+		log.Printf("Expected HTTP <200> but got HTTP <%v> at [%v].\n", strconv.Itoa(resp.StatusCode), path)
 
 		if resp.StatusCode == 401 {
 			log.Fatal("POSSIBLE CAUSE: Make sure that you are running this with a Graylog user that has admin permissions.")
