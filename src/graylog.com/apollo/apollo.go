@@ -104,6 +104,11 @@ func main() {
 		files = append(files, IncludedFile{node.NodeId + "-buffers.json", readResourceJsonFromNode(node.TransportAddress, "system/buffers")})
 		files = append(files, IncludedFile{node.NodeId + "-throughput.json", readResourceJsonFromNode(node.TransportAddress, "system/throughput")})
 		files = append(files, IncludedFile{node.NodeId + "-system_messages.json", readResourceJsonFromNode(node.TransportAddress, "system/messages")})
+
+		// Needs at least Graylog v1.3
+		if nodeHasResource(node.TransportAddress, "system/loggers/messages/recent") {
+			files = append(files, IncludedFile{node.NodeId + "-log.json", readResourceJsonFromNode(node.TransportAddress, "system/loggers/messages/recent?limit=500")})
+		}
 	}
 
 	// Get all index ranges.
@@ -145,6 +150,18 @@ func getHTTPRequest(targetUrl string, path string) (*http.Client, *http.Request)
 	}
 
 	return client, req
+}
+
+func nodeHasResource(node string, path string) bool {
+	client, req := getHTTPRequest(node, path)
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		check(err)
+	}
+
+	return resp.StatusCode == 200
 }
 
 func readResourceJsonFromNode(node string, path string) []byte {
