@@ -1,7 +1,13 @@
-GOPATH=/Users/lennart/workspace/graylog2/apollo-collector GOOS=darwin GOARCH=amd64 /usr/local/go/bin/go install graylog.com/apollo
-GOPATH=/Users/lennart/workspace/graylog2/apollo-collector GOOS=linux GOARCH=amd64 /usr/local/go/bin/go install graylog.com/apollo
-GOPATH=/Users/lennart/workspace/graylog2/apollo-collector GOOS=windows GOARCH=amd64 /usr/local/go/bin/go install graylog.com/apollo
+OSs="darwin linux windows"
+ARCHs="386 amd64"
 
-GOPATH=/Users/lennart/workspace/graylog2/apollo-collector GOOS=darwin GOARCH=386 /usr/local/go/bin/go install graylog.com/apollo
-GOPATH=/Users/lennart/workspace/graylog2/apollo-collector GOOS=linux GOARCH=386 /usr/local/go/bin/go install graylog.com/apollo
-GOPATH=/Users/lennart/workspace/graylog2/apollo-collector GOOS=windows GOARCH=386 /usr/local/go/bin/go install graylog.com/apollo
+for os in $OSs; do
+	for arch in $ARCHs; do
+		echo "Building apollo for $os-$arch"
+		if [[ $os == "windows" ]]; then
+			go build -o "apollo_${os}_${arch}.exe" .
+		else
+			go build -o "apollo_${os}_${arch}" .
+		fi
+	done
+done
