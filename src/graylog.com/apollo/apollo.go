@@ -64,20 +64,34 @@ func init() {
 func haveRequiredInput() []error {
 	errs := make([]error, 0)
 	if len(username) == 0 {
-		errs = append(errs, fmt.Errorf("Username isn't set, please use `-user $USERNAME`"))
+		errs = append(errs, fmt.Errorf("Username isn't set, please use `-user $USERNAME` or set the environmental variable `GRAYLOG_USER`"))
 	}
 
 	if len(password) == 0 {
-		errs = append(errs, fmt.Errorf("Password isn't set, please use `-password`"))
+		errs = append(errs, fmt.Errorf("Password isn't set, please use `-password` to prompt for the password or set the environmental variable `GRAYLOG_PASSWORD`"))
 	}
 	if len(url) == 0 {
-		errs = append(errs, fmt.Errorf("URL isn't set, please use `-url $URL`"))
+		errs = append(errs, fmt.Errorf("URL isn't set, please use `-url $URL` or set the environmental variable `GRAYLOG_URL`"))
 	}
 
 	return errs
 }
 
 func main() {
+	// Parse and check the enviornmental variables.
+	for _, e := range os.Environ() {
+		kv := strings.SplitN(e, "=", 2)
+
+		switch kv[0] {
+		case "GRAYLOG_USER":
+			username = kv[1]
+		case "GRAYLOG_PASSWORD":
+			password = kv[1]
+		case "GRAYLOG_URL":
+			url = kv[1]
+		}
+	}
+
 	// Parse and check CLI flags
 	flag.Parse()
 
