@@ -3,4 +3,4 @@ pkg/
 tmp/
 
 graylog_apollo_bundle-*
-apollo-collector-*
+apollo_*
