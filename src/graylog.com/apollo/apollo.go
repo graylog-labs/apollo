@@ -120,7 +120,13 @@ func main() {
 	// Read and store shard routing for each index range.
 	for i := 0; i < len(indexRanges.Ranges); i++ {
 		indexRange := indexRanges.Ranges[i]
-		files = append(files, IncludedFile{"indexrouting-" + indexRange.IndexName + ".json", readResourceJson("system/indexer/indices/" + indexRange.IndexName)})
+		resourceName := "system/indexer/indices/" + indexRange.IndexName
+
+		if nodeHasResource(url, resourceName) {
+			files = append(files, IncludedFile{"indexrouting-" + indexRange.IndexName + ".json", readResourceJson(resourceName)})
+		} else {
+			log.Printf("Index [%v] is registered as a range but does not exist. Skipping.", indexRange.IndexName)
+		}
 	}
 
 	filename := zipIt(files)
