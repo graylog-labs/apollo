@@ -105,9 +105,14 @@ func main() {
 		files = append(files, IncludedFile{node.NodeId + "-throughput.json", readResourceJsonFromNode(node.TransportAddress, "system/throughput")})
 		files = append(files, IncludedFile{node.NodeId + "-system_messages.json", readResourceJsonFromNode(node.TransportAddress, "system/messages")})
 
-		// Needs at least Graylog v1.3
+		// Logs: Needs at least Graylog v1.3
 		if nodeHasResource(node.TransportAddress, "system/loggers/messages/recent") {
 			files = append(files, IncludedFile{node.NodeId + "-log.json", readResourceJsonFromNode(node.TransportAddress, "system/loggers/messages/recent?limit=500")})
+		}
+
+		// Config: Needs at least Graylog v1.3
+		if nodeHasResource(node.TransportAddress, "system/configuration") {
+			files = append(files, IncludedFile{node.NodeId + "-config.json", readResourceJsonFromNode(node.TransportAddress, "system/configuration")})
 		}
 	}
 
