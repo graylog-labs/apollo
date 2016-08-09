@@ -3,6 +3,7 @@ package main
 import (
 	"archive/zip"
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -151,13 +152,19 @@ func getHTTPRequest(targetUrl string, path string) (*http.Client, *http.Request)
 
 	req, err := http.NewRequest("GET", targetUrl+path, nil)
 
+	// Build a custom transport to allow connections to self-signed certificates.
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+
 	if err != nil {
 		check(err)
 	}
 	req.SetBasicAuth(username, password)
 
 	client := &http.Client{
-		Timeout: time.Duration(30 * time.Second),
+		Transport: tr,
+		Timeout:   time.Duration(30 * time.Second),
 	}
 
 	return client, req
