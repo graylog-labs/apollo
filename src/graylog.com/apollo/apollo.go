@@ -10,15 +10,21 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/howeyc/gopass"
 )
 
-var username string
-var password string
-var url string
-var submitToken string
+var (
+	username       string
+	password       string
+	passwordPrompt bool
+	url            string
+	submitToken    string
+)
 
 type IncludedFile struct {
 	Name string
@@ -52,17 +58,55 @@ type IndexRangeDetails struct {
 
 func init() {
 	flag.StringVar(&username, "user", "", "Graylog username (must have administrator permissions)")
-	flag.StringVar(&password, "password", "", "Graylog password")
+	flag.BoolVar(&passwordPrompt, "password", false, "Prompt for a Graylog password")
 	flag.StringVar(&url, "url", "", "URL of a graylog-server REST URL. (Example: http://graylog.example.org:12900)")
 }
 
+func haveRequiredInput() []error {
+	errs := make([]error, 0)
+	if len(username) == 0 {
+		errs = append(errs, fmt.Errorf("Username isn't set, please use `-user $USERNAME` or set the environmental variable `GRAYLOG_USER`"))
+	}
+
+	if len(password) == 0 {
+		errs = append(errs, fmt.Errorf("Password isn't set, please use `-password` to prompt for the password or set the environmental variable `GRAYLOG_PASSWORD`"))
+	}
+	if len(url) == 0 {
+		errs = append(errs, fmt.Errorf("URL isn't set, please use `-url $URL` or set the environmental variable `GRAYLOG_URL`"))
+	}
+
+	return errs
+}
+
 func main() {
-	// Parse and check CLI flags.
+	// Parse and check the enviornmental variables.
+	for _, e := range os.Environ() {
+		kv := strings.SplitN(e, "=", 2)
+
+		switch kv[0] {
+		case "GRAYLOG_USER":
+			username = kv[1]
+		case "GRAYLOG_PASSWORD":
+			password = kv[1]
+		case "GRAYLOG_URL":
+			url = kv[1]
+		}
+	}
+
+	// Parse and check CLI flags
 	flag.Parse()
-	if !flagsSet() {
-		flag.PrintDefaults()
-		fmt.Print("\n")
-		log.Fatal("Missing parameters. Exiting.")
+
+	if passwordPrompt {
+		fmt.Printf("Graylog Password: ")
+		password = string(gopass.GetPasswd())
+	}
+
+	if errs := haveRequiredInput(); len(errs) != 0 {
+		fmt.Println("Unable to start the collector because:")
+		for _, err := range errs {
+			fmt.Println("\tError: ", err)
+		}
+		os.Exit(1)
 	}
 
 	// Set up logger.
@@ -139,10 +183,6 @@ func main() {
 	log.Printf("Wrote bundle to file: %v\n", filename)
 
 	log.Println("Finished.")
-}
-
-func flagsSet() bool {
-	return len(username) > 0 && len(password) > 0 && len(url) > 0
 }
 
 func getHTTPRequest(targetUrl string, path string) (*http.Client, *http.Request) {
