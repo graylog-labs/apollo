@@ -7,17 +7,18 @@ The Apollo collector allows our support customers to easily submit bundles of in
 * The information collected is usually not containing any sensitive information and never any messages you sent into Graylog. We will however be able to see stream and extractor names. Handling of the bundles falls under the support contract conditions and will thus never be shared and stored securely. You can look at the source code or unzip the generated bundle if you want to make sure.
 * You only need to provide the REST API URL of one `graylog-server` instance. Apollo will auto-discover the other `graylog-server` instances in the cluster.
 * Future version will allow an automatic transmission of the bundle to us.
+* Get the current [latest release](https://github.com/Graylog2/apollo/releases/latest) of apollo for your OS
 
 ### Using Apollo on Linux
 
-* Download the binary: `curl -OL https://github.com/Graylog2/apollo/releases/download/0.2/apollo_linux_386`
+* Download the binary: `curl -OL https://github.com/Graylog2/apollo/releases/download/0.4/apollo_linux_386`
 * Make the binary executable: `chmod +x apollo_linux_386`
 * Run the binary (replace username, password and hostname of `graylog-server` instance): `./apollo_linux_386 -user hans -password secret -url http://graylog.example.org:12900`
 * Send us the generated `.ZIP` bundle file via email. (Located in same folder from where you executed Apollo. Called something like `graylog_apollo_bundle-2015-09-23T22-05-54.zip`)
 
 ### Using Apollo on OSX
 
-* Download the binary: `curl -OL https://github.com/Graylog2/apollo/releases/download/0.2/apollo_osx_386`
+* Download the binary: `curl -OL https://github.com/Graylog2/apollo/releases/download/0.4/apollo_osx_386`
 * Make the binary executable: `chmod +x apollo_osx_386`
 * Run the binary (replace username, password and hostname of `graylog-server` instance): `./apollo_osx_386 -user hans -password secret -url http://graylog.example.org:12900`
 * Send us the generated `.ZIP` bundle file via email. (Located in same folder from where you executed Apollo. Called something like `graylog_apollo_bundle-2015-09-23T22-05-54.zip`)
