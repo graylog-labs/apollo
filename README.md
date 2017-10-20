@@ -2,7 +2,7 @@ The Apollo collector allows our support customers to easily submit bundles of in
 
 ## Read before you run Apollo
 
-* The machine you run Apollo from must be able to reach the REST APIs of all `graylog-server` instances in your Graylog cluster. If you are unsure we recommend not to run it from your workstation but from the machine your `graylog-server` master is running on.
+* The machine you run Apollo from must be able to reach the **REST APIs** of all `graylog-server` instances in your Graylog cluster. If you are unsure we recommend not to run it from your workstation but from the machine your `graylog-server` master is running on.
 * You must run Apollo with a Graylog admin user. This can either be the built-in administrator user or a custom user with the `administrator` ruleset applied. The bundle extraction will fail if you run it with a `reader` user.
 * The information collected is usually not containing any sensitive information and never any messages you sent into Graylog. We will however be able to see stream and extractor names. Handling of the bundles falls under the support contract conditions and will thus never be shared and stored securely. You can look at the source code or unzip the generated bundle if you want to make sure.
 * You only need to provide the REST API URL of one `graylog-server` instance. Apollo will auto-discover the other `graylog-server` instances in the cluster.
@@ -13,26 +13,36 @@ The Apollo collector allows our support customers to easily submit bundles of in
 
 * Download the binary: `curl -OL https://github.com/Graylog2/apollo/releases/download/0.4/apollo_linux_386`
 * Make the binary executable: `chmod +x apollo_linux_386`
-* Run the binary (replace username, password and hostname of `graylog-server` instance): `./apollo_linux_386 -user hans -password secret -url http://graylog.example.org:12900`
+* Run the binary (replace username, password and hostname of `graylog-server` instance): `./apollo_linux_386 -user hans -password secret -url http://graylog.example.org:9000/api`
 * Send us the generated `.ZIP` bundle file via email. (Located in same folder from where you executed Apollo. Called something like `graylog_apollo_bundle-2015-09-23T22-05-54.zip`)
 
 ### Using Apollo on OSX
 
 * Download the binary: `curl -OL https://github.com/Graylog2/apollo/releases/download/0.4/apollo_osx_386`
 * Make the binary executable: `chmod +x apollo_osx_386`
-* Run the binary (replace username, password and hostname of `graylog-server` instance): `./apollo_osx_386 -user hans -password secret -url http://graylog.example.org:12900`
+* Run the binary (replace username, password and hostname of `graylog-server` instance): `./apollo_osx_386 -user hans -password secret -url http://graylog.example.org:9000/api`
 * Send us the generated `.ZIP` bundle file via email. (Located in same folder from where you executed Apollo. Called something like `graylog_apollo_bundle-2015-09-23T22-05-54.zip`)
 
 ### Using Apollo on Microsoft Windows
 
 * Download the binary from the [Releases](https://github.com/Graylog2/apollo/releases).
-* Run the binary (replace username, password and hostname of `graylog-server` instance): `c:\apollo_windows_386.exe -user hans -password secret -url http://graylog.example.org:12900`
+* Run the binary (replace username, password and hostname of `graylog-server` instance): `c:\apollo_windows_386.exe -user hans -password secret -url http://graylog.example.org:9000/api`
 * Send us the generated `.ZIP` bundle file via email. (Located in same folder from where you executed Apollo. Called something like `graylog_apollo_bundle-2015-09-23T22-05-54.zip`)
 
 ## FAQ
 
+The run of apollo and the output looks similar to the following:
+```
+./apollo_linux_386 -user admin -password <password> -url http://graylog-web-interface:9000
+2017/10/20 08:39:51.515719 apollo.go:70: Starting up.
+2017/10/20 08:39:51.517787 apollo.go:209: Successfully read 1988 bytes [system/cluster/nodes].
+2017/10/20 08:39:51.517826 apollo.go:247: invalid character '<' looking for beginning of value
+```
+Make sure to use a `graylog-server` **REST API URL** (Default to _graylog-web-interface_**/api**) and not the URL of a `graylog-web-interface` as `-url` parameter.
+
+
 ### I am getting a HTTP 404 and Apollo exits
-Make sure to use a `graylog-server` REST API URL (Default port 12900) and not the URL of a `graylog-web-interface` as `-url` parameter.
+Make sure to use a `graylog-server` **REST API URL** (Default to _graylog-web-interface_**/api**) and not the URL of a `graylog-web-interface` as `-url` parameter.
 
 ### I am getting a HTTP 401 and Apollo exits
 Make sure to use a user with administrator permissions in the `-user` and `-password` parameters of Apollo.
