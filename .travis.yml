@@ -7,7 +7,7 @@ deploy:
     secure: 4vexy6awwNG9LEqHBB6WgtCczUF5m0EAfFTQnvQg34KU2TPpUaY97U7aDulSCEQyBrNuzqYZ4OSmDXqG+6wtWavzyStAuZGVAeFttRR+w1Z7i+2LO7XTP6v2yNiPMy0/5AxU2n99hxkEpd4g0E/zH4xtpknoVZsdsV1lO/CA0hsZRYGWWj3wWfAGVmIo3FzwzLdVy8vGBZJaJVZLrojgoEO15qR7pxCx0Jy5Lg9KJgzkePyauaHXjLDOyUrjJGOhABD+TAFZSj6WRQ6TIDZO5fmDBt1uQgFm6X7/nAJgoVGUIwewfIp4yyh01YyEwAtlvOTQsDywDOUdHF/ch07vwa8SldcWF9mHhbzmCR3zvlVa+B3yR5m4OwLEE0CGUVWza5OW/62IkHWF9Av3IgE2HLpzQmiELhqNeOVLkzMN+MGzgTAVXntzaUilZMCXRytZafsR22YVRePCT47t35pTvOZxQgu9P+9q1jEnW04ITjHU3whdz4dmGEgYslVV/CrXmbkB9HbDV5VbP8fLFr1McWOxkTjpD7h562Z6psHicbUULEb9fq9vmVLJ0aKzKQwtti9uvAL8dFX2hrgUJXmpMtUMrbdOPj5jDat7KSQJcMNqrk2mBAIda/lwHoaXUPa0XbWEvNEGvRxcpf/VRsDJ79/07kGs7lbksOTnGOFX50E=
   file_glob: true
   file:
-    - "apollo_*"
+    - "dist/apollo_*"
   skip_cleanup: true
   on:
     tags: true
