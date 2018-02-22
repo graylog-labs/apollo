@@ -102,7 +102,6 @@ func main() {
 		files = append(files, IncludedFile{node.NodeId + "-system_stats.json", readResourceJsonFromNode(node.TransportAddress, "system/stats")})
 		files = append(files, IncludedFile{node.NodeId + "-services.json", readResourceJsonFromNode(node.TransportAddress, "system/serviceManager")})
 		files = append(files, IncludedFile{node.NodeId + "-journal.json", readResourceJsonFromNode(node.TransportAddress, "system/journal")})
-		files = append(files, IncludedFile{node.NodeId + "-buffers.json", readResourceJsonFromNode(node.TransportAddress, "system/buffers")})
 		files = append(files, IncludedFile{node.NodeId + "-throughput.json", readResourceJsonFromNode(node.TransportAddress, "system/throughput")})
 		files = append(files, IncludedFile{node.NodeId + "-system_messages.json", readResourceJsonFromNode(node.TransportAddress, "system/messages")})
 
